@@ -1,0 +1,9 @@
+<h1>My profile</h1>
+
+<div class="card">
+  <p><strong>Name:</strong> <%= @user.name %></p>
+  <p><strong>Email:</strong> <%= @user.email %></p>
+  <p><strong>Bio:</strong> <%= @user.bio.presence || "No bio yet" %></p>
+
+  <%= link_to "Edit profile", edit_profile_path, class: "button-link" %>
+</div>

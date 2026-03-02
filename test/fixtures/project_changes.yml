@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  project: one
+  description: Added domain model and API structure.
+  changed_at: 2026-03-01 10:30:00
+
+two:
+  project: two
+  description: Updated hero section and call to action text.
+  changed_at: 2026-03-01 15:00:00

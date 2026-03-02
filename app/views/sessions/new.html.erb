@@ -1,0 +1,17 @@
+<h1>Sign in</h1>
+
+<div class="card">
+  <%= form_with url: session_path, scope: :session do |form| %>
+    <div class="field">
+      <%= form.label :email %>
+      <%= form.email_field :email, required: true %>
+    </div>
+
+    <div class="field">
+      <%= form.label :password %>
+      <%= form.password_field :password, required: true %>
+    </div>
+
+    <%= form.submit "Sign in" %>
+  <% end %>
+</div>

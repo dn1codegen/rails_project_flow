@@ -1,0 +1,18 @@
+<h1>Projects</h1>
+
+<% if @projects.any? %>
+  <section class="card project-list">
+    <% @projects.each do |project| %>
+      <% last_change = project.project_changes.first %>
+      <%= link_to project_path(project), class: "project-list-row" do %>
+        <span class="project-list-title"><%= project.display_name %></span>
+        <span class="project-list-changes"><%= project.project_changes.size %></span>
+        <span class="project-list-time"><%= last_change ? short_relative_time(last_change.changed_at) : "-" %></span>
+      <% end %>
+    <% end %>
+  </section>
+<% else %>
+  <div class="card">
+    <p>No projects yet.</p>
+  </div>
+<% end %>

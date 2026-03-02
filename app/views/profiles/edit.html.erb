@@ -1,0 +1,43 @@
+<h1>Edit profile</h1>
+
+<div class="card">
+  <%= form_with model: @user, url: profile_path do |form| %>
+    <% if @user.errors.any? %>
+      <div class="errors">
+        <p><strong>Please fix these errors:</strong></p>
+        <ul>
+          <% @user.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="field">
+      <%= form.label :name %>
+      <%= form.text_field :name, required: true %>
+    </div>
+
+    <div class="field">
+      <%= form.label :email %>
+      <%= form.email_field :email, required: true %>
+    </div>
+
+    <div class="field">
+      <%= form.label :bio %>
+      <%= form.text_area :bio, rows: 4 %>
+    </div>
+
+    <div class="field">
+      <%= form.label :password, "New password (optional)" %>
+      <%= form.password_field :password %>
+    </div>
+
+    <div class="field">
+      <%= form.label :password_confirmation, "Password confirmation" %>
+      <%= form.password_field :password_confirmation %>
+    </div>
+
+    <%= form.submit "Save profile" %>
+  <% end %>
+</div>

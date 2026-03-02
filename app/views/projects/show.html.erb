@@ -1,0 +1,214 @@
+<div data-controller="lightbox" data-action="keydown@window->lightbox#handleKeydown">
+  <article class="card">
+    <h1><%= @project.display_name %></h1>
+    <p><%= simple_format(@project.description) %></p>
+    <div class="project-details">
+      <p><strong>Имя заказчика:</strong> <%= @project.customer_name.presence || "-" %></p>
+      <p><strong>Адрес:</strong> <%= @project.address.presence || "-" %></p>
+      <p><strong>Место:</strong> <%= @project.place.presence || "-" %></p>
+      <p><strong>Статус:</strong> <%= @project.status.presence || "-" %></p>
+    </div>
+    <p><small><%= @project.user.name %></small></p>
+
+    <% if current_user == @project.user %>
+      <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
+    <% end %>
+    <hr>
+
+    <h2>Attached files</h2>
+
+    <h3>Measurements</h3>
+
+    <% if @project.measurement_images.attached? %>
+      <div class="attachments-grid">
+        <% @project.measurement_images.each do |file| %>
+          <div class="attachment-item <%= "attachment-item--image" if file.blob.image? %>">
+            <% file_description = @project.attachment_description_for(file) %>
+            <% if file.blob.image? %>
+              <button
+                type="button"
+                class="history-change-image"
+                data-lightbox-target="image"
+                data-lightbox-url="<%= url_for(file) %>"
+                data-lightbox-alt="Measurement image"
+                data-lightbox-description="<%= file_description.to_s %>"
+                data-action="click->lightbox#open"
+              >
+                <%= image_tag file, class: "attachment-preview", alt: "Measurement image" %>
+              </button>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+
+            <% if file_description.present? %>
+              <div class="attachment-description"><%= simple_format(file_description) %></div>
+            <% end %>
+
+            <% if current_user == @project.user %>
+              <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>No measurement images uploaded.</p>
+    <% end %>
+
+    <h3>Examples</h3>
+
+    <% if @project.example_files.attached? %>
+      <div class="attachments-grid">
+        <% @project.example_files.each do |file| %>
+          <div class="attachment-item <%= "attachment-item--image" if file.blob.image? %>">
+            <% file_description = @project.attachment_description_for(file) %>
+            <% if file.blob.image? %>
+              <button
+                type="button"
+                class="history-change-image"
+                data-lightbox-target="image"
+                data-lightbox-url="<%= url_for(file) %>"
+                data-lightbox-alt="Example image"
+                data-lightbox-description="<%= file_description.to_s %>"
+                data-action="click->lightbox#open"
+              >
+                <%= image_tag file, class: "attachment-preview", alt: "Example image" %>
+              </button>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+
+            <% if file_description.present? %>
+              <div class="attachment-description"><%= simple_format(file_description) %></div>
+            <% end %>
+
+            <% if current_user == @project.user %>
+              <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>No example files uploaded.</p>
+    <% end %>
+
+    <h3>Installation location photos</h3>
+
+    <% if @project.installation_photos.attached? %>
+      <div class="attachments-grid">
+        <% @project.installation_photos.each do |file| %>
+          <div class="attachment-item <%= "attachment-item--image" if file.blob.image? %>">
+            <% file_description = @project.attachment_description_for(file) %>
+            <% if file.blob.image? %>
+              <button
+                type="button"
+                class="history-change-image"
+                data-lightbox-target="image"
+                data-lightbox-url="<%= url_for(file) %>"
+                data-lightbox-alt="Installation photo"
+                data-lightbox-description="<%= file_description.to_s %>"
+                data-action="click->lightbox#open"
+              >
+                <%= image_tag file, class: "attachment-preview", alt: "Installation photo" %>
+              </button>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+
+            <% if file_description.present? %>
+              <div class="attachment-description"><%= simple_format(file_description) %></div>
+            <% end %>
+
+            <% if current_user == @project.user %>
+              <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p>No installation photos uploaded.</p>
+    <% end %>
+  </article>
+
+  <section class="card">
+    <h2>Change history</h2>
+
+    <% if @project.project_changes.any? %>
+      <% @project.project_changes.each do |change| %>
+        <article>
+          <p><%= simple_format(change.description) %></p>
+
+          <% if change.images.attached? %>
+            <div class="attachments-grid">
+              <% change.images.each do |image| %>
+                <div class="attachment-item <%= "attachment-item--image" if image.blob.image? %>">
+                  <button
+                    type="button"
+                    class="history-change-image"
+                    data-lightbox-target="image"
+                    data-lightbox-url="<%= url_for(image) %>"
+                    data-lightbox-alt="Project change image"
+                    data-action="click->lightbox#open"
+                  >
+                    <% if image.blob.image? %>
+                      <%= image_tag image, class: "attachment-preview", alt: "Project change image" %>
+                    <% end %>
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <p><small><%= l(change.changed_at, format: :long) %></small></p>
+        </article>
+        <hr>
+      <% end %>
+    <% else %>
+      <p>No changes recorded yet.</p>
+    <% end %>
+
+    <div
+      class="lightbox"
+      data-lightbox-target="overlay"
+      data-action="click->lightbox#backdropClick wheel->lightbox#scroll"
+      hidden
+    >
+      <button type="button" class="lightbox-close" data-action="click->lightbox#close" aria-label="Close fullscreen image">×</button>
+      <button type="button" class="lightbox-nav lightbox-prev" data-lightbox-target="prevButton" data-action="click->lightbox#previous" aria-label="Previous image">‹</button>
+      <img class="lightbox-image" data-lightbox-target="overlayImage" data-action="click->lightbox#close" alt="">
+      <p class="lightbox-description" data-lightbox-target="description" hidden></p>
+      <button type="button" class="lightbox-nav lightbox-next" data-lightbox-target="nextButton" data-action="click->lightbox#next" aria-label="Next image">›</button>
+      <p class="lightbox-counter" data-lightbox-target="counter"></p>
+    </div>
+  </section>
+
+  <% if current_user == @project.user %>
+    <section class="card">
+      <h2>Add change entry</h2>
+
+      <%= form_with model: [@project, @project_change] do |form| %>
+        <% if @project_change.errors.any? %>
+          <div class="errors">
+            <p><strong>Please fix these errors:</strong></p>
+            <ul>
+              <% @project_change.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="field">
+          <%= form.label :description %>
+          <%= form.text_area :description, rows: 4, required: true %>
+        </div>
+
+        <div class="field">
+          <%= form.label :images, "Images" %>
+          <%= form.file_field :images, multiple: true, accept: "image/*" %>
+        </div>
+
+        <%= form.submit "Add change" %>
+      <% end %>
+    </section>
+  <% end %>
+</div>

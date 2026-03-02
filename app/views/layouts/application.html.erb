@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Project Chronicle" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Project Chronicle">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <header>
+      <nav>
+        <%= link_to "Projects", root_path %>
+        <% if logged_in? %>
+          <%= link_to "New Project", new_project_path %>
+          <%= link_to "Profile", profile_path %>
+          <%= button_to "Sign out", session_path, method: :delete %>
+        <% else %>
+          <%= link_to "Sign in", new_session_path %>
+          <%= link_to "Sign up", new_registration_path %>
+        <% end %>
+      </nav>
+    </header>
+
+    <main>
+      <% flash.each do |type, message| %>
+        <p class="flash <%= type %>"><%= message %></p>
+      <% end %>
+
+      <%= yield %>
+    </main>
+  </body>
+</html>

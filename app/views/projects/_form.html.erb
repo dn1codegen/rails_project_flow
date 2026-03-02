@@ -1,0 +1,116 @@
+<%= form_with model: project do |form| %>
+  <% if project.errors.any? %>
+    <div class="errors">
+      <p><strong>Please fix these errors:</strong></p>
+      <ul>
+        <% project.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :description %>
+    <%= form.text_area :description, rows: 6, required: true %>
+  </div>
+
+  <div class="field">
+    <%= form.label :customer_name, "Имя заказчика" %>
+    <%= form.text_field :customer_name %>
+  </div>
+
+  <div class="field">
+    <%= form.label :address, "Адрес" %>
+    <%= form.text_field :address %>
+  </div>
+
+  <div class="field">
+    <%= form.label :place, "Место" %>
+    <%= form.text_field :place %>
+  </div>
+
+  <div class="field">
+    <%= form.label :product, "Продукт" %>
+    <%= form.text_field :product, required: true %>
+  </div>
+
+  <div class="field">
+    <%= form.label :status, "Статус" %>
+    <%= form.text_field :status %>
+  </div>
+
+  <div class="field">
+    <%= form.label :measurement_images, "Measurement images" %>
+    <%= form.file_field :measurement_images, multiple: true, accept: "image/*" %>
+  </div>
+
+  <% if project.persisted? && project.measurement_images.attached? %>
+    <div class="field">
+      <p><strong>Measurement image descriptions</strong></p>
+      <div class="attachments-grid">
+        <% project.measurement_images.each do |file| %>
+          <div class="attachment-item">
+            <% if file.blob.image? %>
+              <%= image_tag file, class: "attachment-preview", alt: file.filename.to_s %>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+            <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
+            <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :example_files, "Example files (images/docs)" %>
+    <%= form.file_field :example_files, multiple: true %>
+  </div>
+
+  <% if project.persisted? && project.example_files.attached? %>
+    <div class="field">
+      <p><strong>Example file descriptions</strong></p>
+      <div class="attachments-grid">
+        <% project.example_files.each do |file| %>
+          <div class="attachment-item">
+            <% if file.blob.image? %>
+              <%= image_tag file, class: "attachment-preview", alt: file.filename.to_s %>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+            <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
+            <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :installation_photos, "Installation photos" %>
+    <%= form.file_field :installation_photos, multiple: true, accept: "image/*" %>
+  </div>
+
+  <% if project.persisted? && project.installation_photos.attached? %>
+    <div class="field">
+      <p><strong>Installation photo descriptions</strong></p>
+      <div class="attachments-grid">
+        <% project.installation_photos.each do |file| %>
+          <div class="attachment-item">
+            <% if file.blob.image? %>
+              <%= image_tag file, class: "attachment-preview", alt: file.filename.to_s %>
+            <% else %>
+              <p><%= link_to file.filename.to_s, rails_blob_path(file, disposition: "attachment") %></p>
+            <% end %>
+            <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
+            <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= form.submit %>
+<% end %>
