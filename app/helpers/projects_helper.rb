@@ -6,22 +6,16 @@ module ProjectsHelper
 
     if distance < 3600
       minutes = [ (distance / 60).floor, 1 ].max
-      "#{minutes} #{russian_plural(minutes, %w[минута минуты минут])}"
+      "#{minutes} М"
+    elsif distance > 24.hours
+      total_hours = (distance / 3600).floor
+      days = total_hours / 24
+      remaining_hours = total_hours % 24
+
+      "#{days} Д #{remaining_hours} Ч"
     else
       hours = [ (distance / 3600).floor, 1 ].max
-      "#{hours} #{russian_plural(hours, %w[час часа часов])}"
-    end
-  end
-
-  private
-
-  def russian_plural(number, forms)
-    return forms[2] if (11..14).cover?(number % 100)
-
-    case number % 10
-    when 1 then forms[0]
-    when 2..4 then forms[1]
-    else forms[2]
+      "#{hours} Ч"
     end
   end
 end

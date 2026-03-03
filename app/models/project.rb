@@ -2,6 +2,7 @@ class Project < ApplicationRecord
   belongs_to :user
   has_many :project_changes, -> { order(changed_at: :desc, created_at: :desc) }, dependent: :destroy
   has_many :project_attachment_descriptions, dependent: :destroy
+  has_one_attached :cover_image
   has_many_attached :measurement_images
   has_many_attached :example_files
   has_many_attached :installation_photos

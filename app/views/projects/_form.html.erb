@@ -16,6 +16,22 @@
   </div>
 
   <div class="field">
+    <%= form.label :cover_image, "Обложка проекта" %>
+    <%= form.file_field :cover_image, accept: "image/*" %>
+  </div>
+
+  <% if project.cover_image.attached? %>
+    <div class="field">
+      <p><strong>Текущая обложка</strong></p>
+      <%= image_tag project.cover_image, class: "project-cover-image", alt: "Текущая обложка проекта" %>
+      <div class="attachment-remove-control">
+        <%= form.check_box :remove_cover_image %>
+        <%= form.label :remove_cover_image, "Удалить обложку" %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="field">
     <%= form.label :customer_name, "Имя заказчика" %>
     <%= form.text_field :customer_name %>
   </div>
@@ -58,6 +74,10 @@
             <% end %>
             <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
             <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+            <div class="attachment-remove-control">
+              <%= check_box_tag "project[remove_attachment_ids][]", file.id, false, id: "project_remove_attachment_#{file.id}" %>
+              <%= label_tag "project_remove_attachment_#{file.id}", "Удалить файл" %>
+            </div>
           </div>
         <% end %>
       </div>
@@ -82,6 +102,10 @@
             <% end %>
             <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
             <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+            <div class="attachment-remove-control">
+              <%= check_box_tag "project[remove_attachment_ids][]", file.id, false, id: "project_remove_attachment_#{file.id}" %>
+              <%= label_tag "project_remove_attachment_#{file.id}", "Удалить файл" %>
+            </div>
           </div>
         <% end %>
       </div>
@@ -106,6 +130,10 @@
             <% end %>
             <%= label_tag "project_attachment_descriptions_#{file.id}", "Description" %>
             <%= text_area_tag "project[attachment_descriptions][#{file.id}]", project.attachment_description_for(file), id: "project_attachment_descriptions_#{file.id}", rows: 2 %>
+            <div class="attachment-remove-control">
+              <%= check_box_tag "project[remove_attachment_ids][]", file.id, false, id: "project_remove_attachment_#{file.id}" %>
+              <%= label_tag "project_remove_attachment_#{file.id}", "Удалить файл" %>
+            </div>
           </div>
         <% end %>
       </div>

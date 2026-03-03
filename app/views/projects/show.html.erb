@@ -1,5 +1,20 @@
 <div data-controller="lightbox" data-action="keydown@window->lightbox#handleKeydown">
   <article class="card">
+    <% if @project.cover_image.attached? %>
+      <div class="project-cover">
+        <button
+          type="button"
+          class="project-cover-button"
+          data-lightbox-target="image"
+          data-lightbox-url="<%= url_for(@project.cover_image) %>"
+          data-lightbox-alt="Project cover image"
+          data-action="click->lightbox#open"
+        >
+          <%= image_tag @project.cover_image, class: "project-cover-image", alt: "Project cover image" %>
+        </button>
+      </div>
+    <% end %>
+
     <h1><%= @project.display_name %></h1>
     <p><%= simple_format(@project.description) %></p>
     <div class="project-details">
@@ -12,7 +27,10 @@
       <p class="project-author" style="margin: 0;"><small><%= @project.user.name %></small></p>
 
       <% if current_user == @project.user %>
-        <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
+        <div class="project-author-actions">
+          <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
+          <%= link_to "Delete project", project_path(@project), data: { turbo_method: :delete, turbo_confirm: "Delete this project and all its files?" }, class: "button-link button-link-danger" %>
+        </div>
       <% end %>
     </div>
     <hr>

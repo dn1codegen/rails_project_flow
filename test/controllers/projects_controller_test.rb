@@ -17,7 +17,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".project-list-changes", text: /\A\d+\z/
-    assert_select ".project-list-time", text: /\d+\s+(?:минута|минуты|минут|час|часа|часов)/
+    assert_select ".project-list-time", text: /\A\d+\s+(?:М|Ч|Д)(?:\s+\d+\s+Ч)?\z/
   end
 
   test "index shows customer name and address for project row" do
@@ -29,9 +29,29 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".project-list-title small", text: "ООО Ромашка • ул. Ленина, 5", count: 1
   end
 
+  test "index renders cover thumbnail on project row when cover is attached" do
+    @project.cover_image.attach(file_fixture_upload("sample.svg", "image/svg+xml"))
+
+    get projects_url
+
+    assert_response :success
+    assert_select "a.project-list-row .project-list-cover-preview", count: 1
+    assert_select "a.project-list-row .project-list-cover-preview img.project-list-cover-image", count: 1
+  end
+
   test "should get show" do
     get project_url(@project)
     assert_response :success
+  end
+
+  test "show renders project cover image at top" do
+    @project.cover_image.attach(file_fixture_upload("sample.svg", "image/svg+xml"))
+
+    get project_url(@project)
+
+    assert_response :success
+    assert_select ".project-cover button.project-cover-button[data-lightbox-target='image']", count: 1
+    assert_select ".project-cover img.project-cover-image", count: 1
   end
 
   test "show renders history images without filename links" do
@@ -104,6 +124,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".project-author-row", count: 1
     assert_select ".project-author-row .project-author small", text: @project.user.name, count: 1
     assert_select ".project-author-row a.button-link", text: "Edit project", count: 1
+    assert_select ".project-author-row a.button-link.button-link-danger", text: "Delete project", count: 1
   end
 
   test "should redirect new when not signed in" do
@@ -120,11 +141,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[name='project[title]']", count: 0
     assert_select "input[name='project[product]'][required]"
+    assert_select "input[name='project[cover_image]'][type='file']", count: 1
   end
 
   test "should create project when signed in" do
     post session_url, params: { session: { email: @user.email, password: "password123" } }
 
+    cover_image = file_fixture_upload("sample.svg", "image/svg+xml")
     measurement = file_fixture_upload("sample.svg", "image/svg+xml")
     example_doc = file_fixture_upload("example.txt", "text/plain")
     installation_photo = file_fixture_upload("sample.svg", "image/svg+xml")
@@ -138,6 +161,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
           place: "Склад №2",
           product: "Терминал доступа",
           status: "В работе",
+          cover_image: cover_image,
           measurement_images: [ measurement ],
           example_files: [ example_doc ],
           installation_photos: [ installation_photo ]
@@ -153,6 +177,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Склад №2", created_project.place
     assert_equal "Терминал доступа", created_project.product
     assert_equal "В работе", created_project.status
+    assert created_project.cover_image.attached?
     assert created_project.measurement_images.attached?
     assert created_project.example_files.attached?
     assert created_project.installation_photos.attached?
@@ -235,6 +260,45 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, @project.reload.measurement_images.count
   end
 
+  test "should remove selected attachments and related descriptions on update" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+
+    @project.measurement_images.attach(file_fixture_upload("sample.svg", "image/svg+xml"))
+    attachment = @project.measurement_images.attachments.first
+    @project.project_attachment_descriptions.create!(
+      attachment: attachment,
+      description: "Description that should be deleted with file."
+    )
+
+    patch project_url(@project), params: {
+      project: {
+        description: @project.description,
+        remove_attachment_ids: [ attachment.id ]
+      }
+    }
+
+    assert_redirected_to project_url(@project)
+    @project.reload
+    assert_equal 0, @project.measurement_images.attachments.count
+    assert_nil @project.project_attachment_descriptions.find_by(attachment_id: attachment.id)
+  end
+
+  test "should remove project cover image on update" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+
+    @project.cover_image.attach(file_fixture_upload("sample.svg", "image/svg+xml"))
+
+    patch project_url(@project), params: {
+      project: {
+        description: @project.description,
+        remove_cover_image: "1"
+      }
+    }
+
+    assert_redirected_to project_url(@project)
+    assert_not @project.reload.cover_image.attached?
+  end
+
   test "should save per-file descriptions on update" do
     post session_url, params: { session: { email: @user.email, password: "password123" } }
 
@@ -277,5 +341,25 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to project_url(@project)
     assert_not_equal "Hacked title", @project.reload.title
+  end
+
+  test "should destroy own project" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+
+    assert_difference("Project.count", -1) do
+      delete project_url(@project)
+    end
+
+    assert_redirected_to projects_url
+  end
+
+  test "should not destroy project for non-owner" do
+    post session_url, params: { session: { email: @other_user.email, password: "password123" } }
+
+    assert_no_difference("Project.count") do
+      delete project_url(@project)
+    end
+
+    assert_redirected_to project_url(@project)
   end
 end

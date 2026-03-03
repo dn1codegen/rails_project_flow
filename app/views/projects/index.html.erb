@@ -11,6 +11,11 @@
             <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
           </small>
         </span>
+        <% if project.cover_image.attached? %>
+          <span class="project-list-cover-preview" aria-hidden="true">
+            <%= image_tag project.cover_image, class: "project-list-cover-image", alt: "" %>
+          </span>
+        <% end %>
         <span class="project-list-changes"><%= project.project_changes.size %></span>
         <span class="project-list-time"><%= last_change ? short_relative_time(last_change.changed_at) : "-" %></span>
       <% end %>

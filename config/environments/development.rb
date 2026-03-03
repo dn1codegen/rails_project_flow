@@ -30,6 +30,9 @@ Rails.application.configure do
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
+  # Allow seeded SVG placeholders to render in <img> instead of being forced as download.
+  config.active_storage.content_types_to_serve_as_binary -= [ "image/svg+xml" ]
+  config.active_storage.content_types_allowed_inline += [ "image/svg+xml" ]
 
   # Don't care if the mailer can't send.
   config.action_mailer.raise_delivery_errors = false
