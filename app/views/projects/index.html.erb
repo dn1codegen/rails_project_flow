@@ -9,9 +9,18 @@
         <span class="project-list-block-count"><%= block[:entries].size %></span>
       </h2>
       <div class="project-list-header" role="presentation">
-        <span class="project-list-title">ПРОЕКТ</span>
+        <span class="project-list-title project-list-header-title">
+          <span class="project-list-title-label">ПРОЕКТ</span>
+          <span class="project-limit-filters">
+            <% @index_limit_options.each do |limit| %>
+              <%= link_to limit,
+                projects_path(limit: limit),
+                class: "project-limit-button#{@selected_index_limit == limit ? " is-active" : ""}" %>
+            <% end %>
+          </span>
+        </span>
         <span class="project-list-changes">ИЗМ</span>
-        <span class="project-list-time">ДНИ/ЧАСЫ</span>
+        <span class="project-list-time">ВРЕМЯ</span>
       </div>
 
       <% block[:entries].each_with_index do |entry, index| %>
@@ -29,7 +38,7 @@
             </span>
           <% end %>
           <span class="project-list-changes"><%= project.project_changes.size %></span>
-          <span class="project-list-time"><%= short_relative_time(entry[:last_edited_at]) %></span>
+          <span class="project-list-time"><%= relative_hours_or_days(entry[:last_edited_at]) %></span>
         <% end %>
       <% end %>
     </section>

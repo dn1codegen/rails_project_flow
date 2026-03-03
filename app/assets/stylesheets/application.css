@@ -116,6 +116,51 @@ main {
     flex: 1 1 auto;
 }
 
+.project-list-header-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    white-space: normal;
+    overflow: visible;
+}
+
+.project-list-title-label {
+    white-space: nowrap;
+}
+
+.project-limit-filters {
+    display: inline-flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.project-limit-button {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 999px;
+    text-decoration: none;
+    color: #475467;
+    background: #fff;
+    font-size: 0.74rem;
+    line-height: 1.2;
+}
+
+.project-limit-button:hover,
+.project-limit-button:focus-visible {
+    border-color: #98a2b3;
+    background: #f8fafc;
+}
+
+.project-limit-button.is-active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #f8fafc;
+}
+
 .project-list-row-number {
     display: inline-block;
     min-width: 1.7rem;
@@ -172,6 +217,101 @@ main {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.archive-search-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.archive-year-filters {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.archive-year-label {
+    color: #344054;
+    font-weight: 600;
+    margin-right: 0.1rem;
+}
+
+.archive-year-button {
+    display: inline-block;
+    padding: 0.32rem 0.62rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 999px;
+    text-decoration: none;
+    color: #344054;
+    background: #fff;
+    font-size: 0.9rem;
+}
+
+.archive-year-button:hover,
+.archive-year-button:focus-visible {
+    border-color: #98a2b3;
+    background: #f8fafc;
+}
+
+.archive-year-button.is-active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #f8fafc;
+}
+
+.archive-project-list-header,
+.archive-project-list-row {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 2fr);
+}
+
+.archive-search-fields {
+    flex: 1 1 auto;
+}
+
+.archive-search-label {
+    margin-bottom: 0.35rem;
+}
+
+.archive-search-input {
+    width: 100%;
+}
+
+.archive-search-input-wrap {
+    position: relative;
+}
+
+.archive-search-input-wrap .archive-search-input {
+    padding-right: 2.7rem;
+}
+
+.archive-search-icon-button {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    width: 1.95rem;
+    height: 1.95rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 999px;
+    background: #fff;
+    color: #475467;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.archive-search-icon-button:hover,
+.archive-search-icon-button:focus-visible {
+    border-color: #98a2b3;
+    color: #1d2939;
+}
+
+.archive-search-icon {
+    width: 0.95rem;
+    height: 0.95rem;
 }
 
 .project-details {
@@ -234,6 +374,32 @@ button,
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+.project-author-dates {
+    color: #475467;
+}
+
+.project-share-block {
+    margin: 0 0 0.7rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.project-share-title {
+    margin: 0 0 0.45rem;
+    font-size: 0.95rem;
+}
+
+.project-share-controls {
+    margin-bottom: 0.35rem;
+}
+
+.project-share-status {
+    margin: 0;
+    color: #475467;
 }
 
 .flash {
@@ -459,4 +625,11 @@ button,
     max-width: min(88vw, 920px);
     text-align: center;
     white-space: pre-line;
+}
+
+@media (max-width: 640px) {
+    .archive-search-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

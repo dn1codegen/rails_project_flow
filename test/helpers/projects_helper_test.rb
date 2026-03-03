@@ -32,4 +32,46 @@ class ProjectsHelperTest < ActionView::TestCase
 
     assert_equal "02/00", short_relative_time(time, now: now)
   end
+
+  test "relative hours or days uses hours for up to 24 hours" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 10.hours
+
+    assert_equal "10 ч", relative_hours_or_days(time, now: now)
+  end
+
+  test "relative hours or days uses days for more than 24 hours up to 30 days" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 3.days
+
+    assert_equal "3 д", relative_hours_or_days(time, now: now)
+  end
+
+  test "relative hours or days keeps days for exactly 30 days" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 30.days
+
+    assert_equal "30 д", relative_hours_or_days(time, now: now)
+  end
+
+  test "relative hours or days uses months with one decimal after 30 days" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 45.days
+
+    assert_equal "1,5 м", relative_hours_or_days(time, now: now)
+  end
+
+  test "relative hours or days keeps months format up to 12 months" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 360.days
+
+    assert_equal "12,0 м", relative_hours_or_days(time, now: now)
+  end
+
+  test "relative hours or days uses years with one decimal after 12 months" do
+    now = Time.zone.parse("2026-03-03 12:00:00")
+    time = now - 400.days
+
+    assert_equal "1,1 г", relative_hours_or_days(time, now: now)
+  end
 end

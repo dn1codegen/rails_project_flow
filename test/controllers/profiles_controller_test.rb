@@ -9,6 +9,10 @@ class ProfilesControllerTest < ActionDispatch::IntegrationTest
   test "should get show" do
     get profile_url
     assert_response :success
+    assert_select ".profile-project-list", count: 1
+    assert_select ".profile-project-list .project-list-block-count", text: "1", count: 1
+    assert_select ".profile-project-list .project-list-row", text: /Inventory Service/, count: 1
+    assert_select ".profile-project-list .project-list-row", text: /Marketing Website/, count: 0
   end
 
   test "should get edit" do

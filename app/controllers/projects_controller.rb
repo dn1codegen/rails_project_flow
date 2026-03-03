@@ -3,19 +3,67 @@ class ProjectsController < ApplicationController
   ATTACHMENT_DESCRIPTION_PARAM = :attachment_descriptions
   REMOVE_ATTACHMENT_IDS_PARAM = :remove_attachment_ids
   REMOVE_COVER_IMAGE_PARAM = :remove_cover_image
-  PROJECT_BLOCK_DEFINITIONS = [
-    { key: :month, title: "Проекты не более месяца" },
-    { key: :quarter, title: "Проекты не более 3 месяцев" },
-    { key: :year, title: "Проекты до года" }
-  ].freeze
+  PROJECT_BLOCK_TITLE = "Проекты до года".freeze
+  INDEX_LIMIT_OPTIONS = [ 10, 30, 70, 100 ].freeze
+  DEFAULT_INDEX_LIMIT = 10
 
-  before_action :require_login, except: %i[index show]
-  before_action :set_project, only: %i[show edit update destroy]
-  before_action :require_project_owner, only: %i[edit update destroy]
+  before_action :require_login, except: %i[index archive show]
+  before_action :set_project, only: %i[show edit update destroy refresh_share_link]
+  before_action :require_project_owner, only: %i[edit update destroy refresh_share_link]
 
   def index
+    @index_limit_options = INDEX_LIMIT_OPTIONS
+    @selected_index_limit = selected_index_limit
     projects = Project.includes(:user, :project_changes, { cover_image_attachment: :blob }).order(created_at: :desc)
-    @project_blocks = build_project_blocks(projects)
+    @project_blocks = build_project_blocks(projects, limit: @selected_index_limit)
+  end
+
+  def archive
+    @query = params[:q].to_s.strip
+    @selected_year = params[:year].to_s.strip
+    @selected_month = params[:month].to_s.strip
+    @archive_years = Project.order(created_at: :desc).pluck(:created_at).map(&:year).uniq
+    @archive_months = []
+    @projects =
+      Project.left_joins(:user)
+        .includes(:user, :project_changes)
+        .order(created_at: :desc)
+
+    if @selected_year.match?(/\A\d{4}\z/)
+      year = @selected_year.to_i
+      year_range = Time.zone.local(year, 1, 1).all_year
+      @projects = @projects.where(created_at: year_range)
+      @archive_months = Project.where(created_at: year_range).order(created_at: :desc).pluck(:created_at).map(&:month).uniq
+
+      if @selected_month.match?(/\A(0?[1-9]|1[0-2])\z/)
+        month = @selected_month.to_i
+        @selected_month = month.to_s
+        @projects = @projects.where(created_at: Time.zone.local(year, month, 1).all_month)
+      else
+        @selected_month = ""
+      end
+    else
+      @selected_year = ""
+      @selected_month = ""
+    end
+
+    return unless @query.present?
+
+    sanitized_query = "%#{ActiveRecord::Base.sanitize_sql_like(@query)}%"
+    @projects = @projects.where(
+      <<~SQL.squish,
+        projects.product LIKE :query OR
+        projects.title LIKE :query OR
+        projects.description LIKE :query OR
+        projects.customer_name LIKE :query OR
+        projects.address LIKE :query OR
+        projects.place LIKE :query OR
+        projects.status LIKE :query OR
+        users.name LIKE :query OR
+        users.email LIKE :query
+      SQL
+      query: sanitized_query
+    )
   end
 
   def show
@@ -63,6 +111,11 @@ class ProjectsController < ApplicationController
   def destroy
     @project.destroy
     redirect_to projects_path, notice: "Project was deleted."
+  end
+
+  def refresh_share_link
+    @project.regenerate_share_link!
+    redirect_to @project, notice: "Share link is active for 4 days."
   end
 
   private
@@ -171,32 +224,19 @@ class ProjectsController < ApplicationController
     ).index_by(&:id)
   end
 
-  def build_project_blocks(projects, now: Time.current)
-    project_entries_by_block = { month: [], quarter: [], year: [] }
-
+  def build_project_blocks(projects, now: Time.current, limit:)
     entries = projects.map do |project|
-      last_changed_at = project.project_changes.first&.changed_at
-      last_edited_at = last_changed_at || project.updated_at
+      last_edited_at = project.project_changes.first&.changed_at || project.created_at
 
       { project: project, last_edited_at: last_edited_at }
     end.sort_by { |entry| entry[:last_edited_at] }.reverse
 
-    entries.each do |entry|
-      age = now - entry[:last_edited_at]
+    recent_entries = entries.select { |entry| now - entry[:last_edited_at] <= 1.year }.first(limit)
+    [ { title: PROJECT_BLOCK_TITLE, entries: recent_entries } ]
+  end
 
-      if age <= 1.month
-        project_entries_by_block[:month] << entry
-      elsif age <= 3.months
-        project_entries_by_block[:quarter] << entry
-      elsif age <= 1.year
-        project_entries_by_block[:year] << entry
-      else
-        project_entries_by_block[:year] << entry
-      end
-    end
-
-    PROJECT_BLOCK_DEFINITIONS.map do |block|
-      { title: block[:title], entries: project_entries_by_block[block[:key]] }
-    end
+  def selected_index_limit
+    requested_limit = params[:limit].to_i
+    INDEX_LIMIT_OPTIONS.include?(requested_limit) ? requested_limit : DEFAULT_INDEX_LIMIT
   end
 end

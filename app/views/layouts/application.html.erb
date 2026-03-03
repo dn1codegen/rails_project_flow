@@ -18,6 +18,7 @@
     <header>
       <nav>
         <%= link_to "Projects", root_path %>
+        <%= link_to "Архив", archive_projects_path %>
         <% if logged_in? %>
           <%= link_to "New Project", new_project_path %>
           <%= link_to "Profile", profile_path %>

@@ -5,3 +5,41 @@
 
   <%= link_to "Edit profile", edit_profile_path, class: "button-link" %>
 </div>
+
+<section class="card project-list profile-project-list">
+  <h2 class="project-list-block-title">
+    Мои проекты
+    <span class="project-list-block-count"><%= @projects.size %></span>
+  </h2>
+
+  <% if @projects.any? %>
+    <div class="project-list-header" role="presentation">
+      <span class="project-list-title project-list-header-title">
+        <span class="project-list-title-label">ПРОЕКТ</span>
+      </span>
+      <span class="project-list-changes">ИЗМ</span>
+      <span class="project-list-time">ВРЕМЯ</span>
+    </div>
+
+    <% @projects.each_with_index do |project, index| %>
+      <% last_activity_at = project_last_activity_at(project) %>
+      <%= link_to project_path(project), class: "project-list-row" do %>
+        <span class="project-list-title">
+          <span class="project-list-row-number"><%= index + 1 %>.</span><%= project.display_name %><br>
+          <small>
+            <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
+          </small>
+        </span>
+        <% if project.cover_image.attached? %>
+          <span class="project-list-cover-preview" aria-hidden="true">
+            <%= image_tag project.cover_image, class: "project-list-cover-image", alt: "" %>
+          </span>
+        <% end %>
+        <span class="project-list-changes"><%= project.project_changes.size %></span>
+        <span class="project-list-time"><%= relative_hours_or_days(last_activity_at) %></span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <p>У вас пока нет проектов.</p>
+  <% end %>
+</section>

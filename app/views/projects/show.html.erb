@@ -16,6 +16,24 @@
     <% end %>
 
     <h1><%= @project.display_name %></h1>
+    <div class="project-author-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.35rem 0 0.5rem;">
+      <div class="project-author-meta">
+        <p class="project-author" style="margin: 0;"><small><%= @project.user.name %></small></p>
+        <p class="project-author-dates" style="margin: 0;">
+          <small>
+            Создан: <%= l(@project.created_at, format: :long) %> •
+            Изменен: <%= l(project_last_activity_at(@project), format: :long) %>
+          </small>
+        </p>
+      </div>
+
+      <% if current_user == @project.user && !@shared_view %>
+        <div class="project-author-actions">
+          <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
+          <%= link_to "Delete project", project_path(@project), data: { turbo_method: :delete, turbo_confirm: "Delete this project and all its files?" }, class: "button-link button-link-danger" %>
+        </div>
+      <% end %>
+    </div>
     <p><%= simple_format(@project.description) %></p>
     <div class="project-details">
       <p><strong>Имя заказчика:</strong> <%= @project.customer_name.presence || "-" %></p>
@@ -23,16 +41,32 @@
       <p><strong>Место:</strong> <%= @project.place.presence || "-" %></p>
       <p><strong>Статус:</strong> <%= @project.status.presence || "-" %></p>
     </div>
-    <div class="project-author-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.35rem 0 0.5rem;">
-      <p class="project-author" style="margin: 0;"><small><%= @project.user.name %></small></p>
-
-      <% if current_user == @project.user %>
-        <div class="project-author-actions">
-          <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
-          <%= link_to "Delete project", project_path(@project), data: { turbo_method: :delete, turbo_confirm: "Delete this project and all its files?" }, class: "button-link button-link-danger" %>
+    <% if current_user == @project.user && !@shared_view %>
+      <section class="project-share-block" aria-label="Управление ссылкой проекта">
+        <h2 class="project-share-title">Ссылка на проект</h2>
+        <div class="project-share-controls">
+          <% if @project.active_share_link? %>
+            <%= link_to "Поделиться", shared_project_path(@project.share_token), class: "button-link", target: "_blank", rel: "noopener" %>
+          <% elsif @project.share_token_expires_at.present? %>
+            <%= link_to "Создать ссылку заново", refresh_share_link_project_path(@project), data: { turbo_method: :post }, class: "button-link" %>
+          <% else %>
+            <%= link_to "Создать ссылку", refresh_share_link_project_path(@project), data: { turbo_method: :post }, class: "button-link" %>
+          <% end %>
         </div>
-      <% end %>
-    </div>
+        <p class="project-share-status">
+          <% if @project.active_share_link? %>
+            <small>
+              Ссылка активна еще <strong><%= share_link_time_left(@project.share_token_expires_at) %></strong>
+              (до <%= l(@project.share_token_expires_at, format: :long) %>).
+            </small>
+          <% elsif @project.share_token_expires_at.present? %>
+            <small>Срок действия ссылки истек <%= l(@project.share_token_expires_at, format: :long) %>. Создайте новую.</small>
+          <% else %>
+            <small>Ссылка для просмотра еще не создана.</small>
+          <% end %>
+        </p>
+      </section>
+    <% end %>
     <hr>
 
     <h2>Attached files</h2>
@@ -64,7 +98,7 @@
               <div class="attachment-description"><%= simple_format(file_description) %></div>
             <% end %>
 
-            <% if current_user == @project.user %>
+            <% if current_user == @project.user && !@shared_view %>
               <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
             <% end %>
           </div>
@@ -101,7 +135,7 @@
               <div class="attachment-description"><%= simple_format(file_description) %></div>
             <% end %>
 
-            <% if current_user == @project.user %>
+            <% if current_user == @project.user && !@shared_view %>
               <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
             <% end %>
           </div>
@@ -138,7 +172,7 @@
               <div class="attachment-description"><%= simple_format(file_description) %></div>
             <% end %>
 
-            <% if current_user == @project.user %>
+            <% if current_user == @project.user && !@shared_view %>
               <%= link_to(file_description.present? ? "Изменить описание" : "Добавить описание", edit_project_path(@project), class: "attachment-description-hint") %>
             <% end %>
           </div>
@@ -201,7 +235,7 @@
     </div>
   </section>
 
-  <% if current_user == @project.user %>
+  <% if current_user == @project.user && !@shared_view %>
     <section class="card">
       <h2>Add change entry</h2>
 

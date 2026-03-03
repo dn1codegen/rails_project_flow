@@ -1,0 +1,85 @@
+<h1>Архив проектов</h1>
+
+<section class="card archive-years">
+  <div class="archive-year-filters">
+    <span class="archive-year-label">Год:</span>
+    <%= link_to "Все",
+      archive_projects_path(q: @query.presence),
+      class: "archive-year-button#{@selected_year.blank? ? " is-active" : ""}" %>
+    <% @archive_years.each do |year| %>
+      <% short_year = format("%02d", year.to_i % 100) %>
+      <%= link_to short_year,
+        archive_projects_path(q: @query.presence, year: year),
+        class: "archive-year-button#{@selected_year == year.to_s ? " is-active" : ""}" %>
+    <% end %>
+  </div>
+</section>
+
+<% if @selected_year.present? && @archive_months.any? %>
+  <section class="card archive-months">
+    <div class="archive-year-filters archive-month-filters">
+      <span class="archive-year-label">Месяц:</span>
+      <%= link_to "Все",
+        archive_projects_path(q: @query.presence, year: @selected_year),
+        class: "archive-year-button#{@selected_month.blank? ? " is-active" : ""}" %>
+      <% @archive_months.each do |month| %>
+        <% month_text = archive_month_name(month) %>
+        <%= link_to month_text,
+          archive_projects_path(q: @query.presence, year: @selected_year, month: month),
+          class: "archive-year-button#{@selected_month == month.to_s ? " is-active" : ""}" %>
+      <% end %>
+    </div>
+  </section>
+<% end %>
+
+<section class="card archive-search">
+  <%= form_with url: archive_projects_path, method: :get, local: true, class: "archive-search-form" do |form| %>
+    <% if @selected_year.present? %>
+      <%= form.hidden_field :year, value: @selected_year %>
+    <% end %>
+    <% if @selected_month.present? %>
+      <%= form.hidden_field :month, value: @selected_month %>
+    <% end %>
+    <div class="archive-search-fields">
+      <%= form.label :q, "Поиск по проектам", class: "archive-search-label" %>
+      <div class="archive-search-input-wrap">
+        <%= form.search_field :q, value: @query, placeholder: "Название, клиент, адрес, статус, автор...", class: "archive-search-input" %>
+        <button type="submit" class="archive-search-icon-button" aria-label="Искать">
+          <svg viewBox="0 0 24 24" class="archive-search-icon" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  <% end %>
+</section>
+
+<% if @projects.any? %>
+  <section class="card project-list">
+    <h2 class="project-list-block-title">
+      Найдено проектов
+      <span class="project-list-block-count"><%= @projects.size %></span>
+    </h2>
+    <div class="project-list-header archive-project-list-header" role="presentation">
+      <span class="project-list-title">ПРОЕКТ</span>
+      <span class="project-list-time">ВРЕМЯ</span>
+    </div>
+
+    <% @projects.each_with_index do |project, index| %>
+      <%= link_to project_path(project), class: "project-list-row archive-project-list-row" do %>
+        <span class="project-list-title">
+          <span class="project-list-row-number"><%= index + 1 %>.</span><%= project.display_name %><br>
+          <small>
+            <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
+          </small>
+        </span>
+        <span class="project-list-time"><%= relative_hours_or_days(project_last_activity_at(project)) %></span>
+      <% end %>
+    <% end %>
+  </section>
+<% else %>
+  <section class="card">
+    <p>По вашему запросу проекты не найдены.</p>
+  </section>
+<% end %>

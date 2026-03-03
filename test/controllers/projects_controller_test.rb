@@ -14,22 +14,164 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "index shows header and days-hours format for project row" do
+  test "index navigation includes archive tab" do
+    get projects_url
+
+    assert_response :success
+    assert_select "nav a", text: "Архив", count: 1
+  end
+
+  test "should get archive" do
+    get archive_projects_url
+
+    assert_response :success
+    assert_select "h1", text: "Архив проектов", count: 1
+    assert_select "form.archive-search-form[action='#{archive_projects_path}'][method='get']", count: 1
+    assert_select "form.archive-search-form .archive-search-icon-button[type='submit'][aria-label='Искать']", count: 1
+    assert_select "form.archive-search-form input[type='submit'][value='Найти']", count: 0
+    assert_select ".archive-year-filters", count: 1
+    assert_select "a.archive-year-button.is-active", text: "Все", count: 1
+    assert_select ".archive-month-filters", count: 0
+  end
+
+  test "archive filters projects by query" do
+    matching_project = Project.create!(
+      user: @user,
+      product: "Шкаф-купе Лофт",
+      customer_name: "Семья Орловых",
+      address: "Казань, ул. Мира, 7",
+      description: "Проект шкафа-купе для прихожей с матовыми фасадами."
+    )
+    Project.create!(
+      user: @user,
+      product: "Офисные шкафы Модуль",
+      customer_name: "ИП Смирнов",
+      address: "Самара, ул. Победы, 12",
+      description: "Корпусная мебель для зоны документов в офисе."
+    )
+
+    get archive_projects_url, params: { q: "Орловых" }
+
+    assert_response :success
+    assert_select ".project-list-row", text: /#{Regexp.escape(matching_project.display_name)}/, count: 1
+    assert_select ".project-list-row", text: /Офисные шкафы Модуль/, count: 0
+  end
+
+  test "archive filters projects by selected year" do
+    project_2021 = Project.create!(
+      user: @user,
+      product: "Гардероб 2021",
+      customer_name: "Клиент 2021",
+      address: "Тверь, ул. Проектная, 11",
+      description: "Описание проекта корпусной мебели для архива 2021."
+    )
+    project_2024 = Project.create!(
+      user: @user,
+      product: "Гардероб 2024",
+      customer_name: "Клиент 2024",
+      address: "Тверь, ул. Проектная, 24",
+      description: "Описание проекта корпусной мебели для архива 2024."
+    )
+
+    project_2021.update_columns(
+      created_at: Time.zone.parse("2021-05-10 12:00:00"),
+      updated_at: Time.zone.parse("2021-05-10 12:00:00")
+    )
+    project_2024.update_columns(
+      created_at: Time.zone.parse("2024-08-15 12:00:00"),
+      updated_at: Time.zone.parse("2024-08-15 12:00:00")
+    )
+
+    get archive_projects_url, params: { year: "2021" }
+
+    assert_response :success
+    assert_select "a.archive-year-button.is-active", text: "21", count: 1
+    assert_select "form.archive-search-form input[name='year'][value='2021']", count: 1
+    assert_select ".archive-month-filters", count: 1
+    assert_select ".project-list-row", text: /#{Regexp.escape(project_2021.display_name)}/, count: 1
+    assert_select ".project-list-row", text: /#{Regexp.escape(project_2024.display_name)}/, count: 0
+  end
+
+  test "archive filters projects by selected month and hides author column" do
+    travel_to Time.zone.parse("2021-05-22 11:00:00") do
+      may_project = Project.create!(
+        user: @user,
+        product: "Шкаф май",
+        customer_name: "Клиент май",
+        address: "Пермь, ул. Майская, 1",
+        description: "Проект для теста фильтра по месяцу."
+      )
+      august_project = Project.create!(
+        user: @user,
+        product: "Шкаф август",
+        customer_name: "Клиент август",
+        address: "Пермь, ул. Августовская, 8",
+        description: "Проект для теста фильтра по месяцу."
+      )
+
+      may_project.update_columns(
+        created_at: Time.zone.parse("2021-05-20 11:00:00"),
+        updated_at: Time.zone.parse("2021-05-20 11:00:00")
+      )
+      august_project.update_columns(
+        created_at: Time.zone.parse("2021-08-10 11:00:00"),
+        updated_at: Time.zone.parse("2021-08-10 11:00:00")
+      )
+      may_change = may_project.project_changes.create!(description: "Последнее обновление проекта.")
+      may_change.update_column(:changed_at, Time.zone.parse("2021-05-20 11:00:00"))
+
+      get archive_projects_url, params: { year: "2021", month: "5" }
+
+      assert_response :success
+      assert_select ".archive-month-filters a.archive-year-button.is-active", text: "Май", count: 1
+      assert_select "form.archive-search-form input[name='year'][value='2021']", count: 1
+      assert_select "form.archive-search-form input[name='month'][value='5']", count: 1
+      assert_select ".project-list-header .project-list-changes", count: 0
+      assert_select ".project-list-header .project-list-time", text: "ВРЕМЯ", count: 1
+      assert_select ".project-list-row", text: /#{Regexp.escape(may_project.display_name)}/, count: 1
+      assert_select ".project-list-row", text: /#{Regexp.escape(august_project.display_name)}/, count: 0
+      assert_select ".project-list-row .project-list-time", text: "2 д", count: 1
+    end
+  end
+
+  test "index shows header and relative time format for project row" do
     travel_to Time.zone.parse("2026-03-03 12:00:00") do
       get projects_url
 
       assert_response :success
-      assert_select ".project-list-block-title", text: /\AПроекты не более месяца\s+\d+\z/, count: 1
+      assert_select ".project-list-block-title", text: /\AПроекты до года\s+\d+\z/, count: 1
       assert_select ".project-list-block-count", text: /\A\d+\z/
-      assert_select ".project-list-header .project-list-title", text: "ПРОЕКТ", count: 1
+      assert_select ".project-list-header .project-list-title-label", text: "ПРОЕКТ", count: 1
+      assert_select ".project-list-header .project-limit-button", count: 4
+      assert_select ".project-list-header .project-limit-button.is-active", text: "10", count: 1
       assert_select ".project-list-header .project-list-changes", text: "ИЗМ", count: 1
-      assert_select ".project-list-header .project-list-time", text: "ДНИ/ЧАСЫ", count: 1
+      assert_select ".project-list-header .project-list-time", text: "ВРЕМЯ", count: 1
       assert_select ".project-list-changes", text: /\A\d+\z/
-      assert_select ".project-list-time", text: /\A\d{2,}\/\d{2}\z/
+      assert_select ".project-list-time", text: /\A\d+\s(ч|д)\z/
     end
   end
 
-  test "index splits projects into month quarter and year blocks by last edit date" do
+  test "index limits project rows by selected recent edits count" do
+    travel_to Time.zone.parse("2026-03-03 12:00:00") do
+      12.times do |index|
+        project = Project.create!(
+          user: @user,
+          product: "Limited Project #{index}",
+          description: "Description long enough for limited project #{index}."
+        )
+        change = project.project_changes.create!(description: "Recent update #{index}.")
+        change.update_column(:changed_at, index.hours.ago)
+      end
+
+      get projects_url, params: { limit: 10 }
+
+      assert_response :success
+      assert_select ".project-list-header .project-limit-button.is-active", text: "10", count: 1
+      assert_select "a.project-list-row", count: 10
+    end
+  end
+
+  test "index keeps one block for projects not older than year and sorts by last edit date" do
     travel_to Time.zone.parse("2026-03-03 12:00:00") do
       month_project = Project.create!(
         user: @user,
@@ -64,38 +206,52 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       )
       year_change.update_column(:changed_at, 8.months.ago)
 
+      old_project = Project.create!(
+        user: @user,
+        product: "Too Old Project",
+        description: "Description long enough for old bucket project."
+      )
+      old_change = old_project.project_changes.create!(
+        description: "Too old update that should not be shown on index.",
+        changed_at: 14.months.ago
+      )
+      old_project.update_column(:updated_at, 14.months.ago)
+      old_change.update_column(:changed_at, 14.months.ago)
+
       get projects_url
 
       assert_response :success
-      assert_select ".project-list-block-title", text: /\AПроекты не более месяца\s+\d+\z/, count: 1
-      assert_select ".project-list-block-title", text: /\AПроекты не более 3 месяцев\s+\d+\z/, count: 1
       assert_select ".project-list-block-title", text: /\AПроекты до года\s+\d+\z/, count: 1
+      assert_select "section.project-list", count: 1
+      assert_select "a.project-list-row", text: /Month Bucket Project/, count: 1
+      assert_select "a.project-list-row", text: /Quarter Bucket Project/, count: 1
+      assert_select "a.project-list-row", text: /Year Bucket Project/, count: 1
+      assert_select "a.project-list-row", text: /Too Old Project/, count: 0
 
-      month_section = css_select("section.project-list").find do |section|
-        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты не более месяца")
-      end
-      quarter_section = css_select("section.project-list").find do |section|
-        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты не более 3 месяцев")
-      end
-      year_section = css_select("section.project-list").find do |section|
-        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты до года")
-      end
+      row_numbers = css_select("section.project-list .project-list-row-number").map { |node| node.text.strip }
+      assert_includes row_numbers, "1."
+      assert_includes row_numbers, "2."
+      assert_includes row_numbers, "3."
+    end
+  end
 
-      assert month_section
-      assert quarter_section
-      assert year_section
+  test "index uses project change timestamp and ignores newer project updated_at" do
+    travel_to Time.zone.parse("2026-03-03 12:00:00") do
+      project = Project.create!(
+        user: @user,
+        product: "Mismatch Time Project",
+        description: "Description long enough for last edit timestamp check."
+      )
+      project.update_column(:updated_at, Time.zone.parse("2026-03-02 10:00:00"))
+      change = project.project_changes.create!(description: "History entry for timestamp comparison.")
+      change.update_column(:changed_at, Time.zone.parse("2026-02-20 12:00:00"))
 
-      assert_includes month_section.text, "Month Bucket Project"
-      assert_includes quarter_section.text, "Quarter Bucket Project"
-      assert_includes year_section.text, "Year Bucket Project"
+      get projects_url, params: { limit: 100 }
 
-      month_numbers = month_section.css(".project-list-row-number").map { |node| node.text.strip }
-      quarter_numbers = quarter_section.css(".project-list-row-number").map { |node| node.text.strip }
-      year_numbers = year_section.css(".project-list-row-number").map { |node| node.text.strip }
-
-      assert_equal "1.", month_numbers.first
-      assert_equal [ "1." ], quarter_numbers
-      assert_equal [ "1." ], year_numbers
+      assert_response :success
+      project_row = css_select("a.project-list-row").find { |row| row.text.include?("Mismatch Time Project") }
+      assert project_row
+      assert_equal "11 д", project_row.at_css(".project-list-time")&.text&.strip
     end
   end
 
@@ -121,6 +277,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "should get show" do
     get project_url(@project)
     assert_response :success
+  end
+
+  test "show displays created timestamp and uses latest change timestamp for last modification" do
+    created_at = Time.zone.parse("2026-01-10 09:15:00")
+    updated_at = Time.zone.parse("2026-01-12 14:45:00")
+    @project.update_columns(created_at: created_at, updated_at: updated_at)
+    @project.project_changes.destroy_all
+
+    get project_url(@project)
+
+    assert_response :success
+    assert_select ".project-author-dates", text: /Создан:/, count: 1
+    assert_select ".project-author-dates", text: /Изменен:/, count: 1
+    assert_includes @response.body, I18n.l(created_at, format: :long)
+    assert_not_includes @response.body, I18n.l(updated_at, format: :long)
   end
 
   test "show renders project cover image at top" do
@@ -194,7 +365,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a.attachment-description-hint", text: "Добавить описание", count: 1
   end
 
-  test "show aligns author and edit link in a single row for owner" do
+  test "show aligns author and owner actions in a single row for owner" do
     post session_url, params: { session: { email: @user.email, password: "password123" } }
 
     get project_url(@project)
@@ -204,6 +375,47 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".project-author-row .project-author small", text: @project.user.name, count: 1
     assert_select ".project-author-row a.button-link", text: "Edit project", count: 1
     assert_select ".project-author-row a.button-link.button-link-danger", text: "Delete project", count: 1
+    assert_select ".project-share-block", count: 1
+    assert_select ".project-share-block .project-share-title", text: "Ссылка на проект", count: 1
+    assert_select ".project-share-block a.button-link", text: "Создать ссылку", count: 1
+    assert_select ".project-share-status", text: /Ссылка для просмотра еще не создана/, count: 1
+  end
+
+  test "show displays active share link and remaining lifetime for owner" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+    @project.regenerate_share_link!(now: Time.zone.parse("2026-03-03 10:00:00"))
+
+    travel_to Time.zone.parse("2026-03-03 12:00:00") do
+      get project_url(@project)
+    end
+
+    assert_response :success
+    assert_select ".project-share-block a.button-link", text: "Поделиться", count: 1
+    assert_select ".project-share-status", text: /Ссылка активна еще/, count: 1
+    assert_select ".project-share-status", text: /3 д 22 ч/, count: 1
+  end
+
+  test "owner can regenerate expired share link" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+    @project.update_columns(share_token: "expired-token", share_token_expires_at: 2.days.ago)
+
+    assert_changes -> { @project.reload.share_token } do
+      post refresh_share_link_project_url(@project)
+    end
+
+    assert_redirected_to project_url(@project)
+    assert @project.reload.active_share_link?
+  end
+
+  test "non-owner cannot regenerate share link" do
+    post session_url, params: { session: { email: @other_user.email, password: "password123" } }
+    @project.update_columns(share_token: "owner-token", share_token_expires_at: 2.days.from_now)
+    original_token = @project.share_token
+
+    post refresh_share_link_project_url(@project)
+
+    assert_redirected_to project_url(@project)
+    assert_equal original_token, @project.reload.share_token
   end
 
   test "should redirect new when not signed in" do

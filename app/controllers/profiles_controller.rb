@@ -3,6 +3,7 @@ class ProfilesController < ApplicationController
 
   def show
     @user = current_user
+    @projects = @user.projects.includes(:project_changes, { cover_image_attachment: :blob }).order(created_at: :desc)
   end
 
   def edit

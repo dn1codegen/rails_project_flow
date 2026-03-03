@@ -12,8 +12,17 @@ Rails.application.routes.draw do
   resource :registration, only: %i[new create]
   resource :session, only: %i[new create destroy]
   resource :profile, only: %i[show edit update]
+  get "shared/projects/:token", to: "shared_projects#show", as: :shared_project
 
   resources :projects do
+    collection do
+      get :archive
+    end
+
+    member do
+      post :refresh_share_link
+    end
+
     resources :project_changes, only: :create
   end
 end
