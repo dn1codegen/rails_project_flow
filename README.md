@@ -1,28 +1,42 @@
 # Project Chronicle
 
-Project Chronicle is a Ruby on Rails 8 application for publishing projects, uploading related files/photos, and tracking project change history over time.
+Project Chronicle is a Ruby on Rails 8.1 app for publishing project cards, storing project files/photos, and keeping a timeline of project changes.
 
-## Core Features
+## Feature Overview
 
-- User registration and authentication (`has_secure_password`)
-- User profile management
-- Public project feed and project detail pages
-- Project ownership rules (only owners can edit a project)
-- Project history entries (only owners can add changes)
-- File attachments with Active Storage:
-  - Measurement images
-  - Example files
-  - Installation photos
+- Account registration and sign-in (`has_secure_password`)
+- User profile editing
+- Public project list and project details page
+- Owner-only project editing and deletion
+- Owner-only history entry creation
+- Active Storage uploads:
+  - project cover image
+  - measurement images
+  - example files (images or documents)
+  - installation photos
+  - images attached to history entries
+- Per-file text descriptions for project attachments
+- Attachment cleanup tools in edit form (remove cover image, remove selected files)
+- Fullscreen image viewer (Stimulus lightbox) with keyboard navigation
 
 ## Tech Stack
 
 - Ruby `3.4.8`
 - Rails `8.1.x`
 - SQLite3
-- Minitest
 - Hotwire (Turbo + Stimulus) with Importmap
-- Propshaft
-- Solid Cache, Solid Queue, Solid Cable
+- Active Storage
+- Minitest
+- RuboCop (`rubocop-rails-omakase`)
+- Brakeman, bundler-audit, importmap audit
+
+## Domain Notes
+
+- `Project` belongs to `User`
+- `ProjectChange` belongs to `Project`
+- `Project` has many attached files and a cover image
+- `ProjectAttachmentDescription` links text descriptions to specific Active Storage attachments
+- Project title is auto-synced from `product` before validation
 
 ## Prerequisites
 
@@ -30,88 +44,79 @@ Project Chronicle is a Ruby on Rails 8 application for publishing projects, uplo
 - Bundler
 - SQLite3
 
-## Local Setup
+## Setup and Run
 
-Install dependencies and prepare the database:
+Install gems and prepare the database:
 
 ```bash
 bin/setup --skip-server
 ```
 
-Start the app:
+Start development processes:
 
 ```bash
 bin/dev
 ```
 
-Alternative server command:
+Alternative (Rails server only):
 
 ```bash
 bin/rails server
 ```
 
-The app will usually be available at `http://localhost:3000`.
+Default app URL: `http://localhost:3000`
 
-## Database Commands
+## Useful Commands
+
+Database:
 
 ```bash
 bin/rails db:prepare
 bin/rails db:reset
-bin/rails log:clear tmp:clear
+bin/rails db:seed
 ```
 
-## Test, Lint, and Security
-
-Run full test suite:
+Tests:
 
 ```bash
 bin/rails test
-```
-
-Run a single test file:
-
-```bash
 bin/rails test test/models/user_test.rb
-```
-
-Run a single test by line:
-
-```bash
 bin/rails test test/models/user_test.rb:42
+bin/rails test:system
 ```
 
-Style checks:
+Lint and security:
 
 ```bash
 bin/rubocop
-```
-
-Security checks:
-
-```bash
-bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
+bin/brakeman --no-pager
 bin/bundler-audit
 bin/importmap audit
 ```
 
-Run CI-equivalent pipeline:
+CI-equivalent local run:
 
 ```bash
 bin/ci
 ```
 
-## Application Routes Overview
+## Authorization Rules
 
-- `root` -> projects index
+- Guests can view projects and project history.
+- Signed-in users can create projects.
+- Only the project owner can edit/delete a project.
+- Only the project owner can add history entries for that project.
+
+## Routes Summary
+
+- `root` -> `projects#index`
 - `resource :registration` -> sign up
-- `resource :session` -> sign in/sign out
-- `resource :profile` -> show/edit/update current user profile
+- `resource :session` -> sign in / sign out
+- `resource :profile` -> current user profile
 - `resources :projects` -> project CRUD
 - `resources :project_changes, only: :create` nested under projects
 
-## Docker (Production-Oriented)
-
-This repository includes a production-focused `Dockerfile`.
+## Docker
 
 Build image:
 
@@ -127,5 +132,5 @@ docker run -d -p 80:80 -e RAILS_MASTER_KEY=<your_master_key> --name codex_2 code
 
 ## Notes
 
-- `db/seeds.rb` currently contains only the template comment block (no seed data yet).
-- Use `bin/...` wrappers rather than raw gem executables for project commands.
+- Prefer `bin/...` wrappers over direct gem executables.
+- Local file uploads use Active Storage defaults for the current environment.
