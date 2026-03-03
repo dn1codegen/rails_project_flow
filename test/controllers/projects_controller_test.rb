@@ -95,6 +95,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a.attachment-description-hint", text: "Добавить описание", count: 1
   end
 
+  test "show aligns author and edit link in a single row for owner" do
+    post session_url, params: { session: { email: @user.email, password: "password123" } }
+
+    get project_url(@project)
+
+    assert_response :success
+    assert_select ".project-author-row", count: 1
+    assert_select ".project-author-row .project-author small", text: @project.user.name, count: 1
+    assert_select ".project-author-row a.button-link", text: "Edit project", count: 1
+  end
+
   test "should redirect new when not signed in" do
     get new_project_url
 

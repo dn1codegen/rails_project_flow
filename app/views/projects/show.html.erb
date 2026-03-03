@@ -8,11 +8,13 @@
       <p><strong>Место:</strong> <%= @project.place.presence || "-" %></p>
       <p><strong>Статус:</strong> <%= @project.status.presence || "-" %></p>
     </div>
-    <p><small><%= @project.user.name %></small></p>
+    <div class="project-author-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.35rem 0 0.5rem;">
+      <p class="project-author" style="margin: 0;"><small><%= @project.user.name %></small></p>
 
-    <% if current_user == @project.user %>
-      <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
-    <% end %>
+      <% if current_user == @project.user %>
+        <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
+      <% end %>
+    </div>
     <hr>
 
     <h2>Attached files</h2>
