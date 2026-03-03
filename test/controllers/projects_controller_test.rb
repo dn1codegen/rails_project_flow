@@ -20,6 +20,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".project-list-time", text: /\d+\s+(?:минута|минуты|минут|час|часа|часов)/
   end
 
+  test "index shows customer name and address for project row" do
+    @project.update!(customer_name: "ООО Ромашка", address: "ул. Ленина, 5")
+
+    get projects_url
+
+    assert_response :success
+    assert_select ".project-list-title small", text: "ООО Ромашка • ул. Ленина, 5", count: 1
+  end
+
   test "should get show" do
     get project_url(@project)
     assert_response :success

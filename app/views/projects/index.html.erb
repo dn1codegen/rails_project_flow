@@ -5,7 +5,12 @@
     <% @projects.each do |project| %>
       <% last_change = project.project_changes.first %>
       <%= link_to project_path(project), class: "project-list-row" do %>
-        <span class="project-list-title"><%= project.display_name %></span>
+        <span class="project-list-title">
+          <%= project.display_name %><br>
+          <small>
+            <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
+          </small>
+        </span>
         <span class="project-list-changes"><%= project.project_changes.size %></span>
         <span class="project-list-time"><%= last_change ? short_relative_time(last_change.changed_at) : "-" %></span>
       <% end %>
