@@ -1,164 +1,45 @@
-# AGENTS.md
+# Repository Guidelines
 
-Guidance for coding agents working in this repository.
-This project is a Rails 8 app using Ruby 3.4, SQLite, Minitest, Hotwire, and Importmap.
+## Project Structure & Module Organization
+This is a Rails 8.1 app (Ruby 3.4, SQLite) focused on project publishing and change tracking.
+- `app/`: MVC code (`models/`, `controllers/`, `views/`), jobs, mailers, and Hotwire behavior.
+- `app/javascript/controllers/`: Stimulus controllers loaded through Importmap.
+- `config/`: environment setup, routes, and CI definition (`config/ci.rb`).
+- `db/`: schema, migrations, and seeds.
+- `test/`: Minitest suites (`models/`, `controllers/`, `system/`) and fixtures.
+- `bin/`: project command wrappers; prefer these over raw gem executables.
 
-## Priority Order
+## Build, Test, and Development Commands
+- `bin/setup --skip-server`: install gems, prepare database, skip boot.
+- `bin/dev`: start local development processes.
+- `bin/rails db:prepare`: create/migrate DB for current environment.
+- `bin/rails test`: run all tests.
+- `bin/rails test test/models/user_test.rb:42`: run one test at a specific line.
+- `bin/rubocop`: run style/lint checks.
+- `bin/brakeman --no-pager`, `bin/bundler-audit`, `bin/importmap audit`: security checks.
+- `bin/ci`: CI-equivalent local run.
 
-1. Follow explicit user instructions.
-2. Follow this AGENTS.md.
-3. Follow existing code patterns in the touched files.
-4. Keep changes minimal, reversible, and well-tested.
+## Coding Style & Naming Conventions
+Use Rails conventions and keep code simple and reversible.
+- Indentation: 2 spaces, no tabs.
+- Ruby names: `snake_case` methods/variables, `CamelCase` classes/modules.
+- File naming: `snake_case.rb`, one class/module per file.
+- Keep controllers thin; move nontrivial business logic to models/services.
+- Follow `.rubocop.yml` (`rubocop-rails-omakase`) and avoid adding dependencies unless necessary.
 
-## Repository Facts
+## Testing Guidelines
+Use Minitest and add tests for every behavior change.
+- Prefer small, focused tests near the changed code.
+- Add regression tests for bug fixes.
+- Keep tests deterministic; use fixtures from `test/fixtures` where practical.
+- For UI flows, use system tests: `bin/rails test:system`.
 
-- Ruby version: `3.4.8` (`.ruby-version`).
-- Rails version: `~> 8.1.2` (`Gemfile`).
-- Test framework: Minitest (`test/`, `test/test_helper.rb`).
-- Linting: RuboCop via `rubocop-rails-omakase`.
-- Security checks: Brakeman, bundler-audit, importmap audit.
-- JS toolchain: Importmap + Stimulus (no Node build required by default).
+## Commit & Pull Request Guidelines
+History currently includes only an initial commit, so use a clear convention going forward.
+- Commit messages: imperative, concise, scoped (example: `Add validation for project ownership`).
+- PRs should include: summary of behavior changes, why the change is needed, test commands run, and screenshots/GIFs for UI updates.
+- Keep PRs focused; avoid mixing refactors with feature work.
 
-## Setup And Local Development
-
-- Initial setup: `bin/setup`
-- Setup without starting server: `bin/setup --skip-server`
-- Start dev server: `bin/dev`
-- Alternative server start: `bin/rails server`
-- Prepare DB: `bin/rails db:prepare`
-- Reset DB: `bin/rails db:reset`
-- Clear logs/tmp: `bin/rails log:clear tmp:clear`
-
-## Build, Lint, Test, And CI Commands
-
-Use `bin/...` wrappers instead of raw gem executables.
-
-### Full CI-equivalent run
-
-- Preferred: `bin/ci`
-- CI steps are defined in `config/ci.rb`.
-
-### Lint and static analysis
-
-- Ruby style: `bin/rubocop`
-- Ruby style (GitHub formatter): `bin/rubocop -f github`
-- Brakeman: `bin/brakeman --no-pager`
-- Brakeman strict CI mode:
-  `bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error`
-- Bundler audit: `bin/bundler-audit`
-- Importmap audit: `bin/importmap audit`
-
-### Tests
-
-- Run full test suite: `bin/rails test`
-- CI test command: `bin/rails db:test:prepare test`
-- Prepare test DB only: `bin/rails db:test:prepare`
-- Run system tests: `bin/rails test:system`
-- CI system test command: `bin/rails db:test:prepare test:system`
-
-### Run a single test (important)
-
-- Single test file:
-  `bin/rails test test/models/user_test.rb`
-- Single test by line number:
-  `bin/rails test test/models/user_test.rb:42`
-- Single test by test name pattern:
-  `bin/rails test -n test_valid_user`
-- Single system test file:
-  `bin/rails test:system test/system/users_test.rb`
-- Single system test by line:
-  `bin/rails test:system test/system/users_test.rb:15`
-
-### Optional build/release tasks
-
-- Precompile assets: `bin/rails assets:precompile`
-- Seed test DB as done in CI helper: `RAILS_ENV=test bin/rails db:seed:replant`
-
-## Code Style Guidelines
-
-This project inherits `rubocop-rails-omakase` defaults via `.rubocop.yml`.
-When uncertain, write code that passes `bin/rubocop` with no overrides.
-
-### Ruby and Rails style
-
-- Use 2-space indentation, no tabs.
-- Keep methods small and intention-revealing.
-- Prefer clear guard clauses over deep nesting.
-- Prefer expressive predicate method names ending in `?`.
-- Use `!` suffix only for dangerous/bang variants.
-- Keep controllers thin; move business logic to models/services as complexity grows.
-- Prefer framework conventions over custom metaprogramming.
-- Avoid introducing new dependencies unless necessary.
-
-### Imports, requires, and load behavior
-
-- Follow Rails autoloading and naming conventions to avoid manual `require`.
-- Put explicit `require` usage in boot/config files, not app classes, unless unavoidable.
-- In JS, use ES module imports as in existing Stimulus files.
-- Keep import paths consistent with Importmap conventions.
-
-### Formatting and structure
-
-- One class/module per file, matching path and constant name.
-- File names: `snake_case.rb`; class/module names: `CamelCase`.
-- Methods/variables: `snake_case`; constants: `SCREAMING_SNAKE_CASE`.
-- Keep line length and layout RuboCop-compliant.
-- Avoid commented-out code and dead branches.
-
-### Types and data handling
-
-- There is no static type checker configured; rely on clear interfaces.
-- Validate and normalize inputs at boundaries (controllers/jobs/services).
-- Use Strong Parameters in controllers for user input.
-- Prefer explicit conversions (`to_i`, `to_s`, etc.) when reading untrusted values.
-
-### Error handling
-
-- Fail fast on invalid state; do not silently swallow exceptions.
-- Rescue only specific exceptions you can handle meaningfully.
-- Keep rescue scope tight; avoid broad `rescue StandardError` in core logic.
-- In jobs, use `retry_on`/`discard_on` patterns when appropriate.
-- For multi-write operations, use transactions to preserve consistency.
-
-### Database and Active Record
-
-- Put schema-changing work in migrations, not runtime code.
-- Prefer query scopes/class methods over repeated ad-hoc query fragments.
-- Avoid N+1 queries in controller/view paths.
-- Keep callbacks minimal; prefer explicit domain methods for complex flows.
-
-### Views, frontend, and Hotwire
-
-- Prefer server-rendered Rails patterns and progressive enhancement.
-- Use Stimulus controllers for small, focused client behavior.
-- Keep JS controllers single-purpose and DOM-driven.
-- Do not introduce a Node-based bundling step unless requested.
-
-### Testing conventions
-
-- Add or update tests for behavior changes.
-- Keep tests deterministic and isolated.
-- Prefer the smallest test scope that proves the behavior.
-- Use fixtures already configured in `test/test_helper.rb` when practical.
-- For bug fixes, add a regression test that fails before the fix.
-
-## Agent Workflow Expectations
-
-- Before finishing, run targeted tests for touched areas at minimum.
-- For broad/refactoring changes, run `bin/ci` when feasible.
-- Run `bin/rubocop` for Ruby edits.
-- If you cannot run a command locally, state what was not run and why.
-- Keep diffs focused; avoid unrelated cleanup.
-
-## Cursor/Copilot Rules
-
-- No `.cursorrules` file was found.
-- No files were found under `.cursor/rules/`.
-- No `.github/copilot-instructions.md` file was found.
-- If these rule files are added later, treat them as additional constraints.
-
-## Notes For Future Updates
-
-- If tooling changes, update command examples first.
-- If RuboCop rules are customized, document project-specific deviations here.
-- If RSpec or other frameworks are added, include equivalent single-test commands.
+## Security & Configuration Tips
+- Do not commit secrets; use Rails credentials/environment variables.
+- Run security tooling before merge (`brakeman`, `bundler-audit`, `importmap audit`).
