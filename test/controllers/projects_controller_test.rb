@@ -32,6 +32,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".archive-year-filters", count: 1
     assert_select "a.archive-year-button.is-active", text: "Все", count: 1
     assert_select ".archive-month-filters", count: 0
+    assert_select ".project-list-row", count: 0
+    assert_select ".card p", text: "Введите запрос в поиск, чтобы показать проекты.", count: 1
   end
 
   test "archive filters projects by query" do
@@ -55,6 +57,29 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".project-list-row", text: /#{Regexp.escape(matching_project.display_name)}/, count: 1
     assert_select ".project-list-row", text: /Офисные шкафы Модуль/, count: 0
+  end
+
+  test "archive search supports multiple words" do
+    matching_project = Project.create!(
+      user: @user,
+      product: "Шкаф-купе Лофт",
+      customer_name: "Семья Орловых",
+      address: "Казань, ул. Мира, 7",
+      description: "Проект шкафа-купе для прихожей с матовыми фасадами."
+    )
+    Project.create!(
+      user: @user,
+      product: "Шкаф-купе Лофт",
+      customer_name: "Семья Петровых",
+      address: "Казань, ул. Мира, 7",
+      description: "Похожий проект, но другой заказчик."
+    )
+
+    get archive_projects_url, params: { q: "лОфТ орЛОВЫХ" }
+
+    assert_response :success
+    assert_select ".project-list-row", text: /#{Regexp.escape(matching_project.display_name)}/, count: 1
+    assert_select ".project-list-row", text: /Семья Петровых/, count: 0
   end
 
   test "archive filters projects by selected year" do
@@ -82,7 +107,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       updated_at: Time.zone.parse("2024-08-15 12:00:00")
     )
 
-    get archive_projects_url, params: { year: "2021" }
+    get archive_projects_url, params: { q: "Гардероб", year: "2021" }
 
     assert_response :success
     assert_select "a.archive-year-button.is-active", text: "21", count: 1
@@ -120,7 +145,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       may_change = may_project.project_changes.create!(description: "Последнее обновление проекта.")
       may_change.update_column(:changed_at, Time.zone.parse("2021-05-20 11:00:00"))
 
-      get archive_projects_url, params: { year: "2021", month: "5" }
+      get archive_projects_url, params: { q: "Шкаф", year: "2021", month: "5" }
 
       assert_response :success
       assert_select ".archive-month-filters a.archive-year-button.is-active", text: "Май", count: 1
@@ -139,7 +164,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       get projects_url
 
       assert_response :success
-      assert_select ".project-list-block-title", text: /\AПроекты до года\s+\d+\z/, count: 1
+      assert_select ".project-list-block-title", text: /\AПоследние отредактированные проекты\s+\d+\z/, count: 1
       assert_select ".project-list-block-count", text: /\A\d+\z/
       assert_select ".project-list-header .project-list-title-label", text: "ПРОЕКТ", count: 1
       assert_select ".project-list-header .project-limit-button", count: 4
@@ -221,7 +246,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       get projects_url
 
       assert_response :success
-      assert_select ".project-list-block-title", text: /\AПроекты до года\s+\d+\z/, count: 1
+      assert_select ".project-list-block-title", text: /\AПоследние отредактированные проекты\s+\d+\z/, count: 1
       assert_select "section.project-list", count: 1
       assert_select "a.project-list-row", text: /Month Bucket Project/, count: 1
       assert_select "a.project-list-row", text: /Quarter Bucket Project/, count: 1
@@ -372,9 +397,9 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".project-author-row", count: 1
-    assert_select ".project-author-row .project-author small", text: @project.user.name, count: 1
-    assert_select ".project-author-row a.button-link", text: "Edit project", count: 1
-    assert_select ".project-author-row a.button-link.button-link-danger", text: "Delete project", count: 1
+    assert_select ".project-author-row .project-author small", text: /Автор проекта:\s*#{Regexp.escape(@project.user.name)}/, count: 1
+    assert_select ".project-author-row a.button-link", text: "Редакция", count: 1
+    assert_select ".project-author-row a.button-link.button-link-danger", text: "Удалить", count: 1
     assert_select ".project-share-block", count: 1
     assert_select ".project-share-block .project-share-title", text: "Ссылка на проект", count: 1
     assert_select ".project-share-block a.button-link", text: "Создать ссылку", count: 1

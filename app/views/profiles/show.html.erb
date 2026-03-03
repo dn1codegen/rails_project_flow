@@ -6,40 +6,119 @@
   <%= link_to "Edit profile", edit_profile_path, class: "button-link" %>
 </div>
 
-<section class="card project-list profile-project-list">
+<section class="card profile-active-shares">
   <h2 class="project-list-block-title">
-    Мои проекты
-    <span class="project-list-block-count"><%= @projects.size %></span>
+    Активные ссылки
+    <span class="project-list-block-count"><%= @active_share_projects.size %></span>
   </h2>
 
+  <% if @active_share_projects.any? %>
+    <div class="project-list-header archive-project-list-header" role="presentation">
+      <span class="project-list-title">ПРОЕКТ</span>
+      <span class="project-list-time">СРОК</span>
+    </div>
+
+    <% @active_share_projects.each_with_index do |project, index| %>
+      <div class="project-list-row archive-project-list-row">
+        <span class="project-list-title">
+          <span class="project-list-row-number"><%= index + 1 %>.</span>
+          <%= link_to project.display_name, project_path(project) %><br>
+          <small>
+            <%= link_to shared_project_path(project.share_token), shared_project_path(project.share_token), target: "_blank", rel: "noopener" %>
+          </small>
+        </span>
+        <span class="project-list-time"><%= share_link_time_left(project.share_token_expires_at) %></span>
+      </div>
+    <% end %>
+  <% else %>
+    <p>Нет активных ссылок.</p>
+  <% end %>
+</section>
+
+<section class="card archive-years">
+  <div class="archive-year-filters">
+    <span class="archive-year-label">Год:</span>
+    <%= link_to "Все",
+      profile_path(q: @query.presence),
+      class: "archive-year-button#{@selected_year.blank? ? " is-active" : ""}" %>
+    <% @archive_years.each do |year| %>
+      <% short_year = format("%02d", year.to_i % 100) %>
+      <%= link_to short_year,
+        profile_path(q: @query.presence, year: year),
+        class: "archive-year-button#{@selected_year == year.to_s ? " is-active" : ""}" %>
+    <% end %>
+  </div>
+</section>
+
+<% if @selected_year.present? && @archive_months.any? %>
+  <section class="card archive-months">
+    <div class="archive-year-filters archive-month-filters">
+      <span class="archive-year-label">Месяц:</span>
+      <%= link_to "Все",
+        profile_path(q: @query.presence, year: @selected_year),
+        class: "archive-year-button#{@selected_month.blank? ? " is-active" : ""}" %>
+      <% @archive_months.each do |month| %>
+        <% month_text = archive_month_name(month) %>
+        <%= link_to month_text,
+          profile_path(q: @query.presence, year: @selected_year, month: month),
+          class: "archive-year-button#{@selected_month == month.to_s ? " is-active" : ""}" %>
+      <% end %>
+    </div>
+  </section>
+<% end %>
+
+<section class="card archive-search">
+  <%= form_with url: profile_path, method: :get, local: true, class: "archive-search-form" do |form| %>
+    <% if @selected_year.present? %>
+      <%= form.hidden_field :year, value: @selected_year %>
+    <% end %>
+    <% if @selected_month.present? %>
+      <%= form.hidden_field :month, value: @selected_month %>
+    <% end %>
+    <div class="archive-search-fields">
+      <%= form.label :q, "Поиск по проектам", class: "archive-search-label" %>
+      <div class="archive-search-input-wrap">
+        <%= form.search_field :q, value: @query, placeholder: "Название, клиент, адрес, статус...", class: "archive-search-input" %>
+        <button type="submit" class="archive-search-icon-button" aria-label="Искать">
+          <svg viewBox="0 0 24 24" class="archive-search-icon" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  <% end %>
+</section>
+
+<section class="card project-list profile-project-list">
   <% if @projects.any? %>
-    <div class="project-list-header" role="presentation">
-      <span class="project-list-title project-list-header-title">
-        <span class="project-list-title-label">ПРОЕКТ</span>
-      </span>
-      <span class="project-list-changes">ИЗМ</span>
+    <h2 class="project-list-block-title">
+      <%= @show_recent_projects ? "Последние измененные проекты" : "Найдено проектов" %>
+      <span class="project-list-block-count"><%= @projects.size %></span>
+    </h2>
+    <div class="project-list-header archive-project-list-header" role="presentation">
+      <span class="project-list-title">ПРОЕКТ</span>
       <span class="project-list-time">ВРЕМЯ</span>
     </div>
 
     <% @projects.each_with_index do |project, index| %>
-      <% last_activity_at = project_last_activity_at(project) %>
-      <%= link_to project_path(project), class: "project-list-row" do %>
+      <%= link_to project_path(project), class: "project-list-row archive-project-list-row" do %>
         <span class="project-list-title">
           <span class="project-list-row-number"><%= index + 1 %>.</span><%= project.display_name %><br>
           <small>
             <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
           </small>
         </span>
-        <% if project.cover_image.attached? %>
-          <span class="project-list-cover-preview" aria-hidden="true">
-            <%= image_tag project.cover_image, class: "project-list-cover-image", alt: "" %>
-          </span>
-        <% end %>
-        <span class="project-list-changes"><%= project.project_changes.size %></span>
-        <span class="project-list-time"><%= relative_hours_or_days(last_activity_at) %></span>
+        <span class="project-list-time"><%= relative_hours_or_days(project_last_activity_at(project)) %></span>
       <% end %>
     <% end %>
   <% else %>
-    <p>У вас пока нет проектов.</p>
+    <% if @show_recent_projects %>
+      <p>Нет проектов с изменениями.</p>
+    <% elsif @query.present? %>
+      <p>По вашему запросу проекты не найдены.</p>
+    <% else %>
+      <p>Введите запрос в поиск, чтобы показать проекты.</p>
+    <% end %>
   <% end %>
 </section>

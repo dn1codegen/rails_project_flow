@@ -15,8 +15,8 @@ class SharedProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "nav", count: 0
     assert_select "h1", text: @project.display_name, count: 1
     assert_select ".project-author-row a.button-link", text: "Поделиться", count: 0
-    assert_select ".project-author-row a.button-link", text: "Edit project", count: 0
-    assert_select ".project-author-row a.button-link", text: "Delete project", count: 0
+    assert_select ".project-author-row a.button-link", text: "Редакция", count: 0
+    assert_select ".project-author-row a.button-link", text: "Удалить", count: 0
     assert_select "h2", text: "Add change entry", count: 0
   end
 

@@ -3,7 +3,7 @@ class ProjectsController < ApplicationController
   ATTACHMENT_DESCRIPTION_PARAM = :attachment_descriptions
   REMOVE_ATTACHMENT_IDS_PARAM = :remove_attachment_ids
   REMOVE_COVER_IMAGE_PARAM = :remove_cover_image
-  PROJECT_BLOCK_TITLE = "Проекты до года".freeze
+  PROJECT_BLOCK_TITLE = "Последние отредактированные проекты".freeze
   INDEX_LIMIT_OPTIONS = [ 10, 30, 70, 100 ].freeze
   DEFAULT_INDEX_LIMIT = 10
 
@@ -47,23 +47,13 @@ class ProjectsController < ApplicationController
       @selected_month = ""
     end
 
-    return unless @query.present?
+    unless @query.present?
+      @projects = Project.none
+      return
+    end
 
-    sanitized_query = "%#{ActiveRecord::Base.sanitize_sql_like(@query)}%"
-    @projects = @projects.where(
-      <<~SQL.squish,
-        projects.product LIKE :query OR
-        projects.title LIKE :query OR
-        projects.description LIKE :query OR
-        projects.customer_name LIKE :query OR
-        projects.address LIKE :query OR
-        projects.place LIKE :query OR
-        projects.status LIKE :query OR
-        users.name LIKE :query OR
-        users.email LIKE :query
-      SQL
-      query: sanitized_query
-    )
+    query_terms = @query.split(/\s+/).map { |term| normalize_archive_search_text(term) }.reject(&:blank?)
+    @projects = @projects.to_a.select { |project| archive_project_matches_query_terms?(project, query_terms) }
   end
 
   def show
@@ -238,5 +228,27 @@ class ProjectsController < ApplicationController
   def selected_index_limit
     requested_limit = params[:limit].to_i
     INDEX_LIMIT_OPTIONS.include?(requested_limit) ? requested_limit : DEFAULT_INDEX_LIMIT
+  end
+
+  def archive_project_matches_query_terms?(project, query_terms)
+    searchable_values = [
+      project.product,
+      project.title,
+      project.description,
+      project.customer_name,
+      project.address,
+      project.place,
+      project.status,
+      project.user&.name,
+      project.user&.email
+    ].map { |value| normalize_archive_search_text(value) }
+
+    query_terms.all? do |term|
+      searchable_values.any? { |value| value.include?(term) }
+    end
+  end
+
+  def normalize_archive_search_text(value)
+    value.to_s.downcase
   end
 end

@@ -18,10 +18,10 @@
     <h1><%= @project.display_name %></h1>
     <div class="project-author-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.35rem 0 0.5rem;">
       <div class="project-author-meta">
-        <p class="project-author" style="margin: 0;"><small><%= @project.user.name %></small></p>
+        <p class="project-author" style="margin: 0;"><small><strong>Автор проекта:</strong> <%= @project.user.name %></small></p>
         <p class="project-author-dates" style="margin: 0;">
           <small>
-            Создан: <%= l(@project.created_at, format: :long) %> •
+            Создан: <%= l(@project.created_at, format: :long) %><br>
             Изменен: <%= l(project_last_activity_at(@project), format: :long) %>
           </small>
         </p>
@@ -29,8 +29,8 @@
 
       <% if current_user == @project.user && !@shared_view %>
         <div class="project-author-actions">
-          <%= link_to "Edit project", edit_project_path(@project), class: "button-link" %>
-          <%= link_to "Delete project", project_path(@project), data: { turbo_method: :delete, turbo_confirm: "Delete this project and all its files?" }, class: "button-link button-link-danger" %>
+          <%= link_to "Редакция", edit_project_path(@project), class: "button-link" %>
+          <%= link_to "Удалить", project_path(@project), data: { turbo_method: :delete, turbo_confirm: "Delete this project and all its files?" }, class: "button-link button-link-danger" %>
         </div>
       <% end %>
     </div>
