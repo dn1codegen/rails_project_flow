@@ -3,13 +3,19 @@ class ProjectsController < ApplicationController
   ATTACHMENT_DESCRIPTION_PARAM = :attachment_descriptions
   REMOVE_ATTACHMENT_IDS_PARAM = :remove_attachment_ids
   REMOVE_COVER_IMAGE_PARAM = :remove_cover_image
+  PROJECT_BLOCK_DEFINITIONS = [
+    { key: :month, title: "Проекты не более месяца" },
+    { key: :quarter, title: "Проекты не более 3 месяцев" },
+    { key: :year, title: "Проекты до года" }
+  ].freeze
 
   before_action :require_login, except: %i[index show]
   before_action :set_project, only: %i[show edit update destroy]
   before_action :require_project_owner, only: %i[edit update destroy]
 
   def index
-    @projects = Project.includes(:user, :project_changes, { cover_image_attachment: :blob }).order(created_at: :desc)
+    projects = Project.includes(:user, :project_changes, { cover_image_attachment: :blob }).order(created_at: :desc)
+    @project_blocks = build_project_blocks(projects)
   end
 
   def show
@@ -163,5 +169,34 @@ class ProjectsController < ApplicationController
       project.example_files.attachments +
       project.installation_photos.attachments
     ).index_by(&:id)
+  end
+
+  def build_project_blocks(projects, now: Time.current)
+    project_entries_by_block = { month: [], quarter: [], year: [] }
+
+    entries = projects.map do |project|
+      last_changed_at = project.project_changes.first&.changed_at
+      last_edited_at = last_changed_at || project.updated_at
+
+      { project: project, last_edited_at: last_edited_at }
+    end.sort_by { |entry| entry[:last_edited_at] }.reverse
+
+    entries.each do |entry|
+      age = now - entry[:last_edited_at]
+
+      if age <= 1.month
+        project_entries_by_block[:month] << entry
+      elsif age <= 3.months
+        project_entries_by_block[:quarter] << entry
+      elsif age <= 1.year
+        project_entries_by_block[:year] << entry
+      else
+        project_entries_by_block[:year] << entry
+      end
+    end
+
+    PROJECT_BLOCK_DEFINITIONS.map do |block|
+      { title: block[:title], entries: project_entries_by_block[block[:key]] }
+    end
   end
 end

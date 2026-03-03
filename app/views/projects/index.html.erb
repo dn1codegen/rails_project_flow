@@ -1,26 +1,39 @@
 <h1>Projects</h1>
 
-<% if @projects.any? %>
-  <section class="card project-list">
-    <% @projects.each do |project| %>
-      <% last_change = project.project_changes.first %>
-      <%= link_to project_path(project), class: "project-list-row" do %>
-        <span class="project-list-title">
-          <%= project.display_name %><br>
-          <small>
-            <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
-          </small>
-        </span>
-        <% if project.cover_image.attached? %>
-          <span class="project-list-cover-preview" aria-hidden="true">
-            <%= image_tag project.cover_image, class: "project-list-cover-image", alt: "" %>
+<% visible_blocks = @project_blocks.select { |block| block[:entries].any? } %>
+<% if visible_blocks.any? %>
+  <% visible_blocks.each do |block| %>
+    <section class="card project-list">
+      <h2 class="project-list-block-title">
+        <%= block[:title] %>
+        <span class="project-list-block-count"><%= block[:entries].size %></span>
+      </h2>
+      <div class="project-list-header" role="presentation">
+        <span class="project-list-title">ПРОЕКТ</span>
+        <span class="project-list-changes">ИЗМ</span>
+        <span class="project-list-time">ДНИ/ЧАСЫ</span>
+      </div>
+
+      <% block[:entries].each_with_index do |entry, index| %>
+        <% project = entry[:project] %>
+        <%= link_to project_path(project), class: "project-list-row" do %>
+          <span class="project-list-title">
+            <span class="project-list-row-number"><%= index + 1 %>.</span><%= project.display_name %><br>
+            <small>
+              <%= project.customer_name.presence || "-" %> • <%= project.address.presence || "-" %>
+            </small>
           </span>
+          <% if project.cover_image.attached? %>
+            <span class="project-list-cover-preview" aria-hidden="true">
+              <%= image_tag project.cover_image, class: "project-list-cover-image", alt: "" %>
+            </span>
+          <% end %>
+          <span class="project-list-changes"><%= project.project_changes.size %></span>
+          <span class="project-list-time"><%= short_relative_time(entry[:last_edited_at]) %></span>
         <% end %>
-        <span class="project-list-changes"><%= project.project_changes.size %></span>
-        <span class="project-list-time"><%= last_change ? short_relative_time(last_change.changed_at) : "-" %></span>
       <% end %>
-    <% end %>
-  </section>
+    </section>
+  <% end %>
 <% else %>
   <div class="card">
     <p>No projects yet.</p>

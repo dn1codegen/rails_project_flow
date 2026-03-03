@@ -1,6 +1,8 @@
 require "test_helper"
 
 class ProjectsControllerTest < ActionDispatch::IntegrationTest
+  include ActiveSupport::Testing::TimeHelpers
+
   setup do
     @user = users(:one)
     @other_user = users(:two)
@@ -12,12 +14,89 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "index shows compact relative last change for project row" do
-    get projects_url
+  test "index shows header and days-hours format for project row" do
+    travel_to Time.zone.parse("2026-03-03 12:00:00") do
+      get projects_url
 
-    assert_response :success
-    assert_select ".project-list-changes", text: /\A\d+\z/
-    assert_select ".project-list-time", text: /\A\d+\s+(?:М|Ч|Д)(?:\s+\d+\s+Ч)?\z/
+      assert_response :success
+      assert_select ".project-list-block-title", text: /\AПроекты не более месяца\s+\d+\z/, count: 1
+      assert_select ".project-list-block-count", text: /\A\d+\z/
+      assert_select ".project-list-header .project-list-title", text: "ПРОЕКТ", count: 1
+      assert_select ".project-list-header .project-list-changes", text: "ИЗМ", count: 1
+      assert_select ".project-list-header .project-list-time", text: "ДНИ/ЧАСЫ", count: 1
+      assert_select ".project-list-changes", text: /\A\d+\z/
+      assert_select ".project-list-time", text: /\A\d{2,}\/\d{2}\z/
+    end
+  end
+
+  test "index splits projects into month quarter and year blocks by last edit date" do
+    travel_to Time.zone.parse("2026-03-03 12:00:00") do
+      month_project = Project.create!(
+        user: @user,
+        product: "Month Bucket Project",
+        description: "Description long enough for month bucket project."
+      )
+      month_change = month_project.project_changes.create!(
+        description: "Recent update for month bucket.",
+        changed_at: 15.days.ago
+      )
+      month_change.update_column(:changed_at, 15.days.ago)
+
+      quarter_project = Project.create!(
+        user: @user,
+        product: "Quarter Bucket Project",
+        description: "Description long enough for quarter bucket project."
+      )
+      quarter_change = quarter_project.project_changes.create!(
+        description: "Middle update for quarter bucket.",
+        changed_at: 2.months.ago
+      )
+      quarter_change.update_column(:changed_at, 2.months.ago)
+
+      year_project = Project.create!(
+        user: @user,
+        product: "Year Bucket Project",
+        description: "Description long enough for year bucket project."
+      )
+      year_change = year_project.project_changes.create!(
+        description: "Old update for year bucket.",
+        changed_at: 8.months.ago
+      )
+      year_change.update_column(:changed_at, 8.months.ago)
+
+      get projects_url
+
+      assert_response :success
+      assert_select ".project-list-block-title", text: /\AПроекты не более месяца\s+\d+\z/, count: 1
+      assert_select ".project-list-block-title", text: /\AПроекты не более 3 месяцев\s+\d+\z/, count: 1
+      assert_select ".project-list-block-title", text: /\AПроекты до года\s+\d+\z/, count: 1
+
+      month_section = css_select("section.project-list").find do |section|
+        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты не более месяца")
+      end
+      quarter_section = css_select("section.project-list").find do |section|
+        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты не более 3 месяцев")
+      end
+      year_section = css_select("section.project-list").find do |section|
+        section.at_css(".project-list-block-title")&.text&.strip&.start_with?("Проекты до года")
+      end
+
+      assert month_section
+      assert quarter_section
+      assert year_section
+
+      assert_includes month_section.text, "Month Bucket Project"
+      assert_includes quarter_section.text, "Quarter Bucket Project"
+      assert_includes year_section.text, "Year Bucket Project"
+
+      month_numbers = month_section.css(".project-list-row-number").map { |node| node.text.strip }
+      quarter_numbers = quarter_section.css(".project-list-row-number").map { |node| node.text.strip }
+      year_numbers = year_section.css(".project-list-row-number").map { |node| node.text.strip }
+
+      assert_equal "1.", month_numbers.first
+      assert_equal [ "1." ], quarter_numbers
+      assert_equal [ "1." ], year_numbers
+    end
   end
 
   test "index shows customer name and address for project row" do
